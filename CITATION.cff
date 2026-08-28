@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying paper."
+title: "Bayesian Kolmogorov--Arnold networks for trustworthy Reynolds-stress closures"
+authors:
+  - family-names: Eidi
+    given-names: Ali
+    affiliation: "Delft University of Technology"
+  - family-names: Jigjid
+    given-names: Kherlen
+    affiliation: "Delft University of Technology"
+  - family-names: Buchanan
+    given-names: Tyler
+    affiliation: "Delft University of Technology"
+  - family-names: Dwight
+    given-names: Richard P.
+    affiliation: "Delft University of Technology"
+year: 2026

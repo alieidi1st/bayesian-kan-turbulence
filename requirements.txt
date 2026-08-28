@@ -1,0 +1,11 @@
+# Core
+torch>=2.0
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+matplotlib>=3.7
+scikit-learn>=1.2
+
+# Kolmogorov--Arnold spline layers (Liu et al. 2024). The Bayesian KAN layer
+# reuses the B-spline basis from this package.
+pykan>=0.2.8
