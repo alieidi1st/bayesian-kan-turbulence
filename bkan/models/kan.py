@@ -69,9 +69,11 @@ class DeterministicKANLayer(nn.Module):
         self.scale_sp = nn.Parameter(torch.ones(in_dim, out_dim) * scale_sp / math.sqrt(in_dim))
         self.to(device)
 
-    def to(self, device):
-        super().to(device)
-        self.device = device
+    def to(self, *args, **kwargs):
+        super().to(*args, **kwargs)
+        # Infer the real device from a parameter so a dtype-only or combined
+        # .to(...) call cannot overwrite self.device with a non-device argument.
+        self.device = self.coef.device
         return self
 
     def forward(self, x: Tensor) -> Tensor:
