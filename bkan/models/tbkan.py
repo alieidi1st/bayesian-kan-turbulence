@@ -268,9 +268,12 @@ class TensorBasisBKAN(nn.Module):
         """
         self.eval()
         N = x.shape[0]
-        b_mean = torch.empty(N, 6)
-        epi_std = torch.empty(N, 6)
-        alea_std = torch.zeros(N, 6)
+        b_mean = torch.empty(N, 6, device=x.device)
+        epi_std = torch.empty(N, 6, device=x.device)
+        alea_std = torch.zeros(N, 6, device=x.device)
+        # Seed locally for reproducible MC draws, but restore the global RNG
+        # state afterwards so calling predict() cannot perturb the training RNG.
+        rng_state = torch.get_rng_state()
         for s0 in range(0, N, chunk):
             sl = slice(s0, min(s0 + chunk, N))
             xc, Tc = x[sl], T[sl]
@@ -278,8 +281,8 @@ class TensorBasisBKAN(nn.Module):
             g_map = self.coefficients(xc, sample=False)
             b_mean[sl] = _to6(torch.einsum('bn,bnij->bij', g_map, Tc))
             # online mean / M2 of the sampled predictions (epistemic variance)
-            mean = torch.zeros(xc.shape[0], 6)
-            M2 = torch.zeros(xc.shape[0], 6)
+            mean = torch.zeros(xc.shape[0], 6, device=x.device)
+            M2 = torch.zeros(xc.shape[0], 6, device=x.device)
             for s in range(n_samples):
                 g = self.coefficients(xc, sample=True)
                 b6 = _to6(torch.einsum('bn,bnij->bij', g, Tc))
@@ -291,6 +294,7 @@ class TensorBasisBKAN(nn.Module):
             if self.noise is not None:
                 log_var = self._noise_log_var(xc, sample=False)   # MAP noise
                 alea_std[sl] = torch.sqrt(torch.exp(log_var) + 1e-8)
+        torch.set_rng_state(rng_state)
         return b_mean, epi_std, alea_std
 
     @torch.no_grad()
