@@ -206,9 +206,11 @@ class BayesianKANLayer(nn.Module):
 
     # ── Device handling ───────────────────────────────────────────────────────
 
-    def to(self, device):
-        super().to(device)
-        self.device = device
+    def to(self, *args, **kwargs):
+        super().to(*args, **kwargs)
+        # Infer the actual device from a parameter, so a dtype-only or combined
+        # .to(...) call cannot overwrite self.device with a non-device argument.
+        self.device = self.coef_mu.device
         return self
 
     # ── Forward pass ─────────────────────────────────────────────────────────
@@ -357,6 +359,11 @@ class BayesianKANLayer(nn.Module):
         x_pos = torch.sort(x, dim=0)[0]
         y_eval = coef2curve(x_pos, self.grid, self.coef_mu, self.k)
         num_interval = self.grid.shape[1] - 1 - 2 * self.k
+        if batch < num_interval + 1:
+            raise ValueError(
+                f"update_grid_from_samples needs at least {num_interval + 1} "
+                f"samples to place {num_interval} intervals, got {batch}"
+            )
 
         def _make_grid(n_intervals: int) -> Tensor:
             ids = [int(batch / n_intervals * i) for i in range(n_intervals)] + [-1]
