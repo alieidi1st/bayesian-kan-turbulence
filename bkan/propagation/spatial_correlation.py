@@ -201,8 +201,9 @@ def generate_correlated_aleatoric_sample(
         ...     total_sample = epistemic_sample + aleatoric_noise
         ...     samples.append(total_sample)
     """
-    if random_state is not None:
-        np.random.seed(random_state)
+    # Use a local RNG when a seed is given, so a seeded call is reproducible
+    # without perturbing the caller's global NumPy RNG stream.
+    rng = np.random.RandomState(random_state) if random_state is not None else np.random
 
     n_cells = len(sigma_aleatoric)
 
@@ -246,11 +247,11 @@ def generate_correlated_aleatoric_sample(
     else:
         # No connectivity - return unsmoothed noise
         result = np.zeros(n_cells)
-        result[corr_idx] = np.random.randn(n_corr) * sigma_aleatoric[corr_idx]
+        result[corr_idx] = rng.randn(n_corr) * sigma_aleatoric[corr_idx]
         return result
 
     # Generate white noise scaled by aleatoric std
-    white_noise = np.random.randn(n_corr) * sigma_aleatoric[corr_idx]
+    white_noise = rng.randn(n_corr) * sigma_aleatoric[corr_idx]
 
     # Smooth to create spatial correlation
     smoothed = laplacian_smooth(white_noise, sub_adjacency, smooth_iterations, diffusion)
@@ -293,21 +294,21 @@ def random_fourier_features_sample(
     Returns:
         (n_cells,) correlated noise field
     """
-    if random_state is not None:
-        np.random.seed(random_state)
+    # Local RNG when seeded (reproducible, no global side effect); global stream otherwise.
+    rng = np.random.RandomState(random_state) if random_state is not None else np.random
 
     n_cells = len(cell_centers)
     n_dims = cell_centers.shape[1]
 
     # Random frequencies
-    W = np.random.randn(n_dims, n_features) / length_scale
-    b = np.random.uniform(0, 2 * np.pi, n_features)
+    W = rng.randn(n_dims, n_features) / length_scale
+    b = rng.uniform(0, 2 * np.pi, n_features)
 
     # Compute features: Z = sqrt(2/D) * cos(X @ W + b)
     Z = np.sqrt(2.0 / n_features) * np.cos(cell_centers @ W + b)
 
     # Sample in feature space
-    theta = np.random.randn(n_features)
+    theta = rng.randn(n_features)
 
     # Project to cell space and scale by aleatoric
     correlated_noise = (Z @ theta) * sigma_aleatoric
